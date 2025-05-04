@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Task Manager - Text to Audio</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="/icon-192.png">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Student Task Manager</h1>
+            <div class="username-section">
+                <span id="usernameDisplay">Welcome, Guest</span>
+                <button onclick="setUsername()">Set Username</button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-menu">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="tasks.html" class="nav-link">Task Manager</a>
+            <a href="sessions.html" class="nav-link">Study Sessions</a>
+        </nav>
+
+        <!-- Text to Audio Section -->
+        <section class="section">
+            <h2>Text to Audio Converter</h2>
+            <div class="form-group">
+                <textarea id="noteInput" rows="4" placeholder="Enter your text to convert to audio..."></textarea>
+                <div class="audio-controls">
+                    <button onclick="convertToAudio()">Play Audio</button>
+                    <button id="pauseButton" onclick="pauseAudio()" disabled>Pause</button>
+                    <button id="resumeButton" onclick="resumeAudio()" disabled>Resume</button>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('Service Worker registered:', registration);
+            })
+            .catch(error => {
+                console.error('Service Worker registration failed:', error);
+            });
+    });
+}
+        // Username Logic
+        let username = localStorage.getItem('username') || 'Guest';
+        document.getElementById('usernameDisplay').textContent = `Welcome, ${username}`;
+
+        function setUsername() {
+            const newUsername = prompt('Enter your username:');
+            if (newUsername && newUsername.trim() !== '') {
+                username = newUsername.trim();
+                localStorage.setItem('username', username);
+                document.getElementById('usernameDisplay').textContent = `Welcome, ${username}`;
+            }
+        }
+
+        // Text to Audio Logic
+        let currentUtterance = null;
+        const pauseButton = document.getElementById('pauseButton');
+        const resumeButton = document.getElementById('resumeButton');
+
+        function convertToAudio() {
+            const noteInput = document.getElementById('noteInput');
+            const text = noteInput.value.trim();
+
+            if (text === '') {
+                alert('Please enter some text to convert to audio.');
+                return;
+            }
+
+            // Cancel any ongoing speech
+            window.speechSynthesis.cancel();
+
+            currentUtterance = new SpeechSynthesisUtterance(text);
+            currentUtterance.lang = 'en-US';
+            currentUtterance.volume = 1;
+            currentUtterance.rate = 1;
+            currentUtterance.pitch = 1;
+
+            // Enable pause button and disable resume button
+            pauseButton.disabled = false;
+            resumeButton.disabled = true;
+
+            // Reset buttons when speech ends
+            currentUtterance.onend = () => {
+                pauseButton.disabled = true;
+                resumeButton.disabled = true;
+                currentUtterance = null;
+            };
+
+            window.speechSynthesis.speak(currentUtterance);
+        }
+
+        function pauseAudio() {
+            if (currentUtterance && window.speechSynthesis.speaking) {
+                window.speechSynthesis.pause();
+                pauseButton.disabled = true;
+                resumeButton.disabled = false;
+            }
+        }
+
+        function resumeAudio() {
+            if (currentUtterance && window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+                pauseButton.disabled = false;
+                resumeButton.disabled = true;
+            }
+        }
+    </script>
+</body>
+</html>

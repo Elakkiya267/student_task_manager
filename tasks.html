@@ -1,0 +1,148 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Task Manager - Tasks</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="/icon-192.png">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Student Task Manager</h1>
+            <div class="username-section">
+                <span id="usernameDisplay">Welcome, Guest</span>
+                <button onclick="setUsername()">Set Username</button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-menu">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="audio.html" class="nav-link">Text to Audio</a>
+            <a href="sessions.html" class="nav-link">Study Sessions</a>
+        </nav>
+
+        <!-- Task Manager Section -->
+        <section class="section">
+            <h2>Task Manager</h2>
+            <!-- Task Input Form -->
+            <div class="form-group">
+                <input type="text" id="taskInput" placeholder="Enter task description">
+                <input type="date" id="dueDate">
+                <button onclick="addTask()">Add Task</button>
+            </div>
+            <!-- Task List -->
+            <ul id="taskList"></ul>
+        </section>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('Service Worker registered:', registration);
+            })
+            .catch(error => {
+                console.error('Service Worker registration failed:', error);
+            });
+    });
+}
+        // Username Logic
+        let username = localStorage.getItem('username') || 'Guest';
+        document.getElementById('usernameDisplay').textContent = `Welcome, ${username}`;
+
+        function setUsername() {
+            const newUsername = prompt('Enter your username:');
+            if (newUsername && newUsername.trim() !== '') {
+                username = newUsername.trim();
+                localStorage.setItem('username', username);
+                document.getElementById('usernameDisplay').textContent = `Welcome, ${username}`;
+            }
+        }
+
+        // Task Manager Logic
+        let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+
+        function addTask() {
+            const taskInput = document.getElementById('taskInput');
+            const dueDateInput = document.getElementById('dueDate');
+            const taskText = taskInput.value.trim();
+            const dueDate = dueDateInput.value;
+
+            if (taskText === '' || dueDate === '') {
+                alert('Please enter a task and due date.');
+                return;
+            }
+
+            const task = {
+                id: Date.now(),
+                text: taskText,
+                dueDate: dueDate,
+                completed: false
+            };
+
+            tasks.push(task);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            taskInput.value = '';
+            dueDateInput.value = '';
+            renderTasks();
+            setReminder(task);
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+
+            tasks.forEach(task => {
+                const li = document.createElement('li');
+                li.className = `task-item ${task.completed ? 'completed' : ''}`;
+                li.innerHTML = `
+                    <div class="task-content">
+                        <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                        <span>${task.text} (Due: ${task.dueDate})</span>
+                    </div>
+                    <button onclick="deleteTask(${task.id})">Delete</button>
+                `;
+                taskList.appendChild(li);
+            });
+        }
+
+        function toggleTask(id) {
+            tasks = tasks.map(task => task.id === id ? { ...task, completed: !task.completed } : task);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        function deleteTask(id) {
+            tasks = tasks.filter(task => task.id !== id);
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            renderTasks();
+        }
+
+        function setReminder(task) {
+            const dueDate = new Date(task.dueDate);
+            const now = new Date();
+            const timeUntilDue = dueDate - now;
+
+            if (timeUntilDue > 0 && !task.completed) {
+                setTimeout(() => {
+                    if (!task.completed) {
+                        alert(`Reminder: Task "${task.text}" is due today!`);
+                    }
+                }, timeUntilDue);
+            }
+        }
+
+        // Initialize
+        renderTasks();
+    </script>
+</body>
+</html>

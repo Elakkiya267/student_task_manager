@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Task Manager - Study Sessions</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="/icon-192.png">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>Student Task Manager</h1>
+            <div class="username-section">
+                <span id="usernameDisplay">Welcome, Guest</span>
+                <button onclick="setUsername()">Set Username</button>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="nav-menu">
+            <a href="index.html" class="nav-link">Home</a>
+            <a href="tasks.html" class="nav-link">Task Manager</a>
+            <a href="audio.html" class="nav-link">Text to Audio</a>
+        </nav>
+
+        <!-- Group Study Sessions Section -->
+        <section class="section">
+            <h2>Group Study Sessions</h2>
+            <!-- Session Input Form -->
+            <div class="form-group">
+                <input type="text" id="sessionTopic" placeholder="Enter study session topic">
+                <input type="date" id="sessionDate">
+                <input type="time" id="sessionTime">
+                <button onclick="addSession()">Add Session</button>
+            </div>
+            <!-- Session List -->
+            <ul id="sessionList"></ul>
+        </section>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('Service Worker registered:', registration);
+            })
+            .catch(error => {
+                console.error('Service Worker registration failed:', error);
+            });
+    });
+}
+        // Username Logic
+        let username = localStorage.getItem('username') || 'Guest';
+        document.getElementById('usernameDisplay').textContent = `Welcome, ${username}`;
+
+        function setUsername() {
+            const newUsername = prompt('Enter your username:');
+            if (newUsername && newUsername.trim() !== '') {
+                username = newUsername.trim();
+                localStorage.setItem('username', username);
+                document.getElementById('usernameDisplay').textContent = `Welcome, ${username}`;
+            }
+        }
+
+        // Group Study Sessions Logic
+        let sessions = JSON.parse(localStorage.getItem('sessions')) || [];
+
+        function addSession() {
+            const sessionTopic = document.getElementById('sessionTopic');
+            const sessionDate = document.getElementById('sessionDate');
+            const sessionTime = document.getElementById('sessionTime');
+            const topicText = sessionTopic.value.trim();
+            const date = sessionDate.value;
+            const time = sessionTime.value;
+
+            if (topicText === '' || date === '' || time === '') {
+                alert('Please enter a topic, date, and time for the study session.');
+                return;
+            }
+
+            const session = {
+                id: Date.now(),
+                topic: topicText,
+                date: date,
+                time: time
+            };
+
+            sessions.push(session);
+            localStorage.setItem('sessions', JSON.stringify(sessions));
+            sessionTopic.value = '';
+            sessionDate.value = '';
+            sessionTime.value = '';
+            renderSessions();
+        }
+
+        function renderSessions() {
+            const sessionList = document.getElementById('sessionList');
+            sessionList.innerHTML = '';
+
+            sessions.forEach(session => {
+                const li = document.createElement('li');
+                li.className = 'session-item';
+                li.innerHTML = `
+                    <span>${session.topic} - ${session.date} at ${session.time}</span>
+                    <button onclick="deleteSession(${session.id})">Delete</button>
+                `;
+                sessionList.appendChild(li);
+            });
+        }
+
+        function deleteSession(id) {
+            sessions = sessions.filter(session => session.id !== id);
+            localStorage.setItem('sessions', JSON.stringify(sessions));
+            renderSessions();
+        }
+
+        // Initialize
+        renderSessions();
+    </script>
+</body>
+</html>
